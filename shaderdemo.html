@@ -192,7 +192,7 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
 
     //create pattern 
     float n =  snoise(vec3(newPos.x*noiseParam.x, newPos.y*noiseParam.y , noiseParam[2]*uTime));
-    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.25 * n);
+    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.18 * n);
     vec4 pattern = vec4(vec3(p*p), 1.0);
 
     background = mix(background, layerColor, pattern);
@@ -204,10 +204,10 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
 void main(void) {
   //same for all layers
   const float lifetime = 1.0;
-  const float growthRate = 0.2;
+  const float growthRate = 0.15;
   vec4 background = vec4(0.0,0.0,0.0,1.0);
-  const float nArms = 5.0; 
-  const float layerDist = 0.24;
+  const float nArms = 7.0; 
+  const float layerDist = 0.2;
   float gTime = uTime*growthRate;
 
   //convert texture coord to mandala coord
@@ -233,11 +233,14 @@ void main(void) {
     float red = 0.4 + 0.6*c;
     float green = 0.4 + 0.6*mod(c + 0.2, 1.0);
     float blue = 0.4 + 0.6*mod(c + 0.4, 1.0);
+  
     vec4 layerColor = vec4(red,green,blue,1.0);
+    //fade to black when reaching edges
+    layerColor = layerColor*smoothstep(1.2, 0.65, layerRadius);
 
     //ml.layerColor = vec4(1.0-c,c*c, 0.5 + 0.5*c, 1.0);
-    float layerAnimationSpeed = 0.0;
-    vec3 layerNoiseParam = vec3(10.0+8.0*c, 10.0+8.0*c, layerAnimationSpeed); 
+    float layerAnimationSpeed = 0.1;
+    vec3 layerNoiseParam = vec3(12.0+8.0*c, 12.0+8.0*c, layerAnimationSpeed); 
 
     background = drawLayer(background, nArms, layerRadius, layerNoiseParam, layerColor);
   }
