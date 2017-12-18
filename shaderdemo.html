@@ -178,7 +178,7 @@ vec4 drawLayer(vec4 background, MandalaLayer l)
     vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), 5.0, l.age);
 
     float n =  snoise(vec3(newPos.x*l.noiseParam.x, newPos.y*l.noiseParam.y , l.animationSpeed*uTime + l.noiseParam[2]));
-    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.2 * n);
+    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.25 * n);
     vec4 pattern = vec4(vec3(p*p), 1.0);
 
     background = mix(background, l.layerColor, pattern);
@@ -189,17 +189,18 @@ vec4 drawLayer(vec4 background, MandalaLayer l)
 void main(void) {
   //same for all layers
   const float lifetime = 8.0;//mod(uTime, 8.0);
-  const float growthRate = 1.0;
+  const float growthRate = 0.4;
   vec4 background = vec4(0.0,0.0,0.0,1.0);
   const float nArms = 5.0; 
   const float layerDist = 0.74;//1.61803399; //golden ratio <3
+  float gTime = uTime*growthRate;
 
   //convert texture coord to mandala coord
   //vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), nArms, growth);
 
   const int nlayers = int(lifetime/layerDist);
-  float youngestId = floor(uTime/layerDist); //youngest layer id
-  float youngest = mod(uTime,layerDist); //age of youngest layer
+  float youngestId = floor(gTime/layerDist); //youngest layer id
+  float youngest = mod(gTime,layerDist); //age of youngest layer
   
 
   for(int i = nlayers; i >= 0; i--) //draw oldest layer first and smaller on top of it
@@ -215,10 +216,14 @@ void main(void) {
     //float c = snoise(vec3(id,id,1.0)+1.0)*0.5; //psuedo random value between 0 and 1
     float c = (sin(1.61803399 *id)+1.0)*0.5; //golden ratio beween colors
 
+    float red = 0.4 + 0.6*c;
+    float green = 0.4 + 0.6*mod(c + 0.2, 1.0);
+    float blue = 0.4 + 0.6*mod(c + 0.4, 1.0);
+    ml.layerColor = vec4(red,green,blue,1.0);
 
-    ml.layerColor = vec4(1.0-c,c*c,c, 1.0);
+    //ml.layerColor = vec4(1.0-c,c*c, 0.5 + 0.5*c, 1.0);
     ml.animationSpeed = 0.0;
-    ml.noiseParam = vec3(5.0+10.0*c, 5.0+10.0*c, c); 
+    ml.noiseParam = vec3(10.0+8.0*c, 10.0+8.0*c, 0.0); 
 
     background = drawLayer(background, ml);
   }
