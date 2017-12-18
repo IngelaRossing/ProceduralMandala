@@ -5,6 +5,7 @@
 <head>
 <title>WebGL firts pattern</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="style.css">
 <!-- <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script> -->
 <script type="text/javascript" src="webgl-utils.js"></script>
 
@@ -121,6 +122,10 @@ float snoise(vec3 v)
                                 dot(p2,x2), dot(p3,x3) ) );
 }
 
+/******************************
+*     MY SHADER FUNCTIONS     *
+******************************/
+
 float patt1(vec2 uv) {
   float n =  snoise(vec3(uv.x*8.0, uv.y*8.0, uTime)); //-1 to 1
   return float(uv.x + uv.y < 1.3 + 0.2 * n);
@@ -131,8 +136,14 @@ float patt2(vec2 uv) {
   return float(uv.x < 1.2 - uv.y * uv.y + 0.1 * n);
 }
 
+float staticPat(vec2 uv)
+{
+  float n =  snoise(vec3(uv.x*18.0, uv.y*18.0 , 1.0));
+  return float(uv.x  < 1.2 - uv.y * uv.y + 0.05 * n);
+}
+
 //reuse a slice of the image nSlizes times around the center
-vec2 mandalaCoords(vec2 origCoords, float nSlizes)
+vec2 mandalaCoords(vec2 origCoords, float nSlizes, float growth)
 {
     // Based on example in http://augustuspash.com/blog/2016/3/29/kaleidoscope
 
@@ -141,9 +152,9 @@ vec2 mandalaCoords(vec2 origCoords, float nSlizes)
      
     //convert to polar coord
     //find the distance of newPos from the bottom left corner
-    float distance = length(newPos.xy);
+    float distance = length(newPos.xy) / growth;
     //find the angle of newPos in relation to the bottom left corner
-    float angle = atan(newPos.y, newPos.x);
+    float angle = atan(newPos.y, newPos.x) + 3.1415/2.0; //have one arm pointing upwards
      
     float viewAngle = 2.0* 3.1415 / nSlizes;
     angle = abs(mod(angle, viewAngle) - viewAngle/2.0);
@@ -154,33 +165,81 @@ vec2 mandalaCoords(vec2 origCoords, float nSlizes)
     return newPos += vec2(0.5); 
 }
 
-	void main(void) {
-	/*
-		//vec4 texel = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+struct MandalaLayer
+{
+  vec4 layerColor;
+  float age; //determines size
+  float animationSpeed;
+  vec3 noiseParam; //Noise parameters for pattern
+} layer;
 
-		//vec4 rgbcolor = vec4(texel.rgb,1.0);
-    //gl_FragColor =  rgbcolor; //* fade;
-		
+vec4 drawLayer(vec4 background, MandalaLayer l)
+{
+    vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), 5.0, l.age);
 
-    vec2 armCoord = abs(2.0 * vec2(vTextureCoord.s , vTextureCoord.t) - 1.0); 
-    vec4 texcolor = texture2D(uSampler, armCoord.xy);
+    float n =  snoise(vec3(newPos.x*l.noiseParam.x, newPos.y*l.noiseParam.y , l.animationSpeed*uTime + l.noiseParam[2]));
+    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.2 * n);
+    vec4 pattern = vec4(vec3(p*p), 1.0);
 
-    float p1 = patt1(vec2(armCoord.x, armCoord.y));
-    vec4 pat1 = vec4(vec3(p1*p1), 1.0);
-		gl_FragColor =  texcolor * pat1;
-    */
+    background = mix(background, l.layerColor, pattern);
+    gl_FragColor = background;
+    return background;
+}
 
-    vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), 5.0);
-    float p1 = patt1(newPos.xy);
-    vec4 pat1 = vec4(vec3(p1*p1), 1.0);
-    float p2 = patt2(newPos.xy);
-    vec4 pat2 = vec4(vec3(p2*p2), 1.0);
+void main(void) {
+  //same for all layers
+  const float lifetime = 8.0;//mod(uTime, 8.0);
+  const float growthRate = 1.0;
+  vec4 background = vec4(0.0,0.0,0.0,1.0);
+  const float nArms = 5.0; 
+  const float layerDist = 0.74;//1.61803399; //golden ratio <3
 
-    //set gl_FragColor to color of the pixel at newPos 
-    //gl_FragColor = texture2D(uSampler, newPos) * pat1; 
-    vec4 layerColor = mix(vec4(0.5, 1.0, 0.3, 1.0), vec4(1.0, 0.2, 0.3, 1.0), pat2);
-    gl_FragColor = mix(layerColor, vec4(0.0, 0.2, 0.9, 1.0), pat1);
-	}
+  //convert texture coord to mandala coord
+  //vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), nArms, growth);
+
+  const int nlayers = int(lifetime/layerDist);
+  float youngestId = floor(uTime/layerDist); //youngest layer id
+  float youngest = mod(uTime,layerDist); //age of youngest layer
+  
+
+  for(int i = nlayers; i >= 0; i--) //draw oldest layer first and smaller on top of it
+  {
+    float t = float(i)*float(layerDist); //get age difference to youngest mandala
+    float id = youngestId - float(i);
+    //create a new layer
+    MandalaLayer ml;
+    ml.age = youngest + t; //next value is t older than youngest layer
+  
+    //Calculate variable for random color and pattern
+    //float c = sin(3.1415 * mod(id,17.0)/(17.0)); //gradient
+    //float c = snoise(vec3(id,id,1.0)+1.0)*0.5; //psuedo random value between 0 and 1
+    float c = (sin(1.61803399 *id)+1.0)*0.5; //golden ratio beween colors
+
+
+    ml.layerColor = vec4(1.0-c,c*c,c, 1.0);
+    ml.animationSpeed = 0.0;
+    ml.noiseParam = vec3(5.0+10.0*c, 5.0+10.0*c, c); 
+
+    background = drawLayer(background, ml);
+  }
+  
+
+  //add a layer
+ /* float p1 = patt1(newPos.xy);
+  vec4 pat1 = vec4(vec3(p1*p1), 1.0);
+  float p2 = patt2(newPos.xy);
+  vec4 pat2 = vec4(vec3(p2*p2), 1.0);
+
+  float ps = staticPat(newPos.xy);
+  vec4 pats = vec4(vec3(ps*ps), 1.0);
+  gl_FragColor = mix(vec4(0.5, 0.0, 0.3, 1.0), vec4(1.0, 0.9, 0.3, 1.0), pats);
+
+  //set gl_FragColor to color of the pixel at newPos 
+  //gl_FragColor = texture2D(uSampler, newPos) * pat1; 
+ // vec4 layerColor = mix(vec4(0.5, 0.0, 0.3, 1.0), vec4(1.0, 0.2, 0.3, 1.0), pat2);
+ // gl_FragColor = mix(layerColor, vec4(1.0, 0.9, 0.3, 1.0), pat1);
+ */
+}
 </script>
 
 <script id="shader-vs" type="x-shader/x-vertex">
@@ -378,7 +437,7 @@ vec2 mandalaCoords(vec2 origCoords, float nSlizes)
 
 		// Check what time it is and set a uniform variable for animation
 		var currentTime = (new Date).getTime(); // Returns milliseconds
-        gl.uniform1f(shaderProgram.uTime, 0.0001 * (currentTime - startTime));
+        gl.uniform1f(shaderProgram.uTime, 0.001 * (currentTime - startTime));
 
 		// Draw the single quad
         gl.drawElements(gl.TRIANGLES, quadVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -453,15 +512,16 @@ vec2 mandalaCoords(vec2 origCoords, float nSlizes)
 
 </head>
 
-<body style="width:600px" onload="webGLStart();">
-    <h1>WebGL Mandala</h1>
-    <canvas id="shaderdemo-canvas" style="border: none;" width="512" height="512"></canvas>
-<p>Based on a demo intended to build upon. <a href='http://weber.itn.liu.se/~stegu/TNM084-2015/webgl-simple/'>Original</a> demonstrates texture loading, procedural
-3D Perlin noise, animation and simple interaction. The "camera" is just a 2D
-face-on orthographic view of a single polygon.</p>
-<p>
-Drag the mouse in the image to pan. Use the mouse wheel to zoom in and out.
-</p>
+<body onload="webGLStart();"> 
+  <canvas id="shaderdemo-canvas" style="border: none;" width="600" height="600"></canvas>
+  <h1>WebGL Mandala</h1>
+  <p>Based on a demo intended to build upon.
+  </br> The <a href='http://weber.itn.liu.se/~stegu/TNM084-2015/webgl-simple/'>original</a> demonstrates texture loading, procedural
+  3D Perlin noise, animation and simple interaction. <br/>The "camera" is just a 2D
+  face-on orthographic view of a single polygon.</p>
+  <p>
+  Drag the mouse in the image to pan. Use the mouse wheel to zoom in and out.
+  </p>
 </body>
 
 </html>
