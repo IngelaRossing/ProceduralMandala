@@ -164,7 +164,7 @@ vec2 mandalaCoords(vec2 origCoords, float nSlizes, float growth)
     //move center of newPos to the center of the screen
     return newPos += vec2(0.5); 
 }
-
+/*
 struct MandalaLayer
 {
   vec4 layerColor;
@@ -185,14 +185,29 @@ vec4 drawLayer(vec4 background, MandalaLayer l)
     gl_FragColor = background;
     return background;
 }
+*/
+vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4 layerColor)
+{
+    vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), nArms, radius);
+
+    //create pattern 
+    float n =  snoise(vec3(newPos.x*noiseParam.x, newPos.y*noiseParam.y , noiseParam[2]*uTime));
+    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.25 * n);
+    vec4 pattern = vec4(vec3(p*p), 1.0);
+
+    background = mix(background, layerColor, pattern);
+    gl_FragColor = background;
+    return background;
+}
+
 
 void main(void) {
   //same for all layers
-  const float lifetime = 8.0;//mod(uTime, 8.0);
-  const float growthRate = 0.4;
+  const float lifetime = 1.0;
+  const float growthRate = 0.2;
   vec4 background = vec4(0.0,0.0,0.0,1.0);
   const float nArms = 5.0; 
-  const float layerDist = 0.74;//1.61803399; //golden ratio <3
+  const float layerDist = 0.24;
   float gTime = uTime*growthRate;
 
   //convert texture coord to mandala coord
@@ -208,8 +223,7 @@ void main(void) {
     float t = float(i)*float(layerDist); //get age difference to youngest mandala
     float id = youngestId - float(i);
     //create a new layer
-    MandalaLayer ml;
-    ml.age = youngest + t; //next value is t older than youngest layer
+    float layerRadius = youngest + t; //next value is t older than youngest layer
   
     //Calculate variable for random color and pattern
     //float c = sin(3.1415 * mod(id,17.0)/(17.0)); //gradient
@@ -219,13 +233,13 @@ void main(void) {
     float red = 0.4 + 0.6*c;
     float green = 0.4 + 0.6*mod(c + 0.2, 1.0);
     float blue = 0.4 + 0.6*mod(c + 0.4, 1.0);
-    ml.layerColor = vec4(red,green,blue,1.0);
+    vec4 layerColor = vec4(red,green,blue,1.0);
 
     //ml.layerColor = vec4(1.0-c,c*c, 0.5 + 0.5*c, 1.0);
-    ml.animationSpeed = 0.0;
-    ml.noiseParam = vec3(10.0+8.0*c, 10.0+8.0*c, 0.0); 
+    float layerAnimationSpeed = 0.0;
+    vec3 layerNoiseParam = vec3(10.0+8.0*c, 10.0+8.0*c, layerAnimationSpeed); 
 
-    background = drawLayer(background, ml);
+    background = drawLayer(background, nArms, layerRadius, layerNoiseParam, layerColor);
   }
   
 
