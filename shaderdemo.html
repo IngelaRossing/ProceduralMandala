@@ -190,12 +190,19 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
 
 
 void main(void) {
-  //same for all layers
-  const float lifetime = 1.0;
-  const float growthRate = 0.15;
+
+  // PARAMETERS THAT CAN BE SET TO ONES PREFERENCE
+  const float growthRate = 0.05;
+  const float nArms = 10.0; 
+  const float layerDist = 0.1;
+  float layerAnimationSpeed = 0.05;
+
+  // Hopefully all parameters can be set with regulators on the web page later
+
+
+  // CODE LESS PRONE TO CHANGES
   vec4 background = vec4(0.0,0.0,0.0,1.0);
-  const float nArms = 7.0; 
-  const float layerDist = 0.2;
+  const float lifetime = 1.0;
   float gTime = uTime*growthRate;
 
   const int nlayers = int(lifetime/layerDist);
@@ -203,14 +210,14 @@ void main(void) {
   float youngest = mod(gTime,layerDist); //age of youngest layer
   float hue_of_youngst = mod(youngestId/300.0,1.0);
 
-  //Calculate parameters for all layers and
-  //draw oldest layer first and smaller on top of it
+  //Calculate and draw oldest layer first and then younger on top of it
   for(int i = nlayers; i >= 0; i--) 
   {
     float t = float(i)*float(layerDist); //get age difference to youngest mandala
     float id = youngestId - float(i);
     float layerRadius = youngest + t; //next value is t older than youngest layer
 
+    // Different HSV-colors can be chosen, for now hue changes
     // chose next color with golden ratio conjugate for hue -> next layer color appear different
     float hue = hue_of_youngst + id * 0.618033988749895; 
     hue = mod(hue, 1.0); //hue is between 0 and 1
@@ -218,13 +225,9 @@ void main(void) {
     vec4 layerColor = vec4(rgbColor, 1.0);
 
     //fade to black when reaching edges
-    layerColor = layerColor*smoothstep(1.2, 0.65, layerRadius);
-
-    //https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
-    //http://devmag.org.za/2012/07/29/how-to-choose-colours-procedurally-algorithms/
+    layerColor = layerColor*smoothstep(lifetime, 0.85*lifetime, layerRadius);
 
     // calculate noise parameters to use for creating the pattern of the layer
-    float layerAnimationSpeed = 0.1;
     vec3 layerNoiseParam = vec3(15.0+4.0*hue, 15.0+4.0*hue, layerAnimationSpeed); 
 
     //draw on top of previously drawn layers
@@ -232,21 +235,9 @@ void main(void) {
   }
   
 
-  //add a layer
- /* float p1 = patt1(newPos.xy);
-  vec4 pat1 = vec4(vec3(p1*p1), 1.0);
-  float p2 = patt2(newPos.xy);
-  vec4 pat2 = vec4(vec3(p2*p2), 1.0);
-
-  float ps = staticPat(newPos.xy);
-  vec4 pats = vec4(vec3(ps*ps), 1.0);
-  gl_FragColor = mix(vec4(0.5, 0.0, 0.3, 1.0), vec4(1.0, 0.9, 0.3, 1.0), pats);
-
-  //set gl_FragColor to color of the pixel at newPos 
-  //gl_FragColor = texture2D(uSampler, newPos) * pat1; 
- // vec4 layerColor = mix(vec4(0.5, 0.0, 0.3, 1.0), vec4(1.0, 0.2, 0.3, 1.0), pat2);
- // gl_FragColor = mix(layerColor, vec4(1.0, 0.9, 0.3, 1.0), pat1);
- */
+  //Links about chosing good colors:
+  //https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+  //http://devmag.org.za/2012/07/29/how-to-choose-colours-procedurally-algorithms/
 }
 </script>
 
