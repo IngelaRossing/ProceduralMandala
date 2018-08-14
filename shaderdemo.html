@@ -135,7 +135,8 @@ vec3 hsv2rgb(vec3 c)
 *     MY SHADER FUNCTIONS     *
 ******************************/
 
-float patt1(vec2 uv) {
+//some patterns that are not used for now
+float patt1(vec2 uv) { 
   float n =  snoise(vec3(uv.x*8.0, uv.y*8.0, uTime)); //-1 to 1
   return float(uv.x + uv.y < 1.3 + 0.2 * n);
 }
@@ -179,8 +180,9 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
     vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), nArms, radius);
 
     //create pattern 
-    float n =  snoise(vec3(newPos.x*noiseParam.x, newPos.y*noiseParam.y , noiseParam[2]*uTime));
-    float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.18 * n);
+    float n =  snoise(vec3(newPos.x*noiseParam.x , newPos.y*noiseParam.y  , noiseParam[2]*radius) );
+    //float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.18 * n);
+    float p = smoothstep(1.0 + 0.18 * n, 0.99 + 0.18 * n, newPos.x*newPos.x+ newPos.y*newPos.y); 
     vec4 pattern = vec4(vec3(p*p), 1.0);
 
     background = mix(background, layerColor, pattern);
@@ -192,10 +194,10 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
 void main(void) {
 
   // PARAMETERS THAT CAN BE SET TO ONES PREFERENCE
-  const float growthRate = 0.05;
+  const float growthSpeed = 0.05;
   const float nArms = 10.0; 
-  const float layerDist = 0.1;
-  float layerAnimationSpeed = 0.05;
+  const float layerDist = 0.12;
+  float layerAnimationSpeed = 2.0;
 
   // Hopefully all parameters can be set with regulators on the web page later
 
@@ -203,7 +205,7 @@ void main(void) {
   // CODE LESS PRONE TO CHANGES
   vec4 background = vec4(0.0,0.0,0.0,1.0);
   const float lifetime = 1.0;
-  float gTime = uTime*growthRate;
+  float gTime = uTime*growthSpeed;
 
   const int nlayers = int(lifetime/layerDist);
   float youngestId = floor(gTime/layerDist); //youngest layer id
