@@ -194,10 +194,10 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
 void main(void) {
 
   // PARAMETERS THAT CAN BE SET TO ONES PREFERENCE
-  const float growthSpeed = 0.1;
-  const float nArms = 8.0; 
-  const float layerDist = 0.3;
-  float layerAnimationSpeed = 0.3;
+  const float growthSpeed = 0.03;
+  const float nArms = 15.0; 
+  const float layerDist = 0.2;
+  float layerAnimationSpeed = 2.0;
 
   // Hopefully all parameters can be set with regulators on the web page later
 
@@ -227,7 +227,7 @@ void main(void) {
     vec4 layerColor = vec4(rgbColor, 1.0);
 
     //fade to black when reaching edges
-    layerColor = layerColor*smoothstep(lifetime, 0.85*lifetime, layerRadius);
+    layerColor = layerColor*smoothstep(lifetime, 0.9*lifetime, layerRadius);
 
     // calculate noise parameters to use for creating the pattern of the layer
     vec3 layerNoiseParam = vec3(15.0+4.0*hue, 15.0+4.0*hue, layerAnimationSpeed); 
@@ -487,16 +487,17 @@ void main(void) {
     			yOffset = yOldOffset - (yDelta / canvas.height / scale * 2.0); // Flip y axis
     			drawScene();
     		}
-  	   	var wheelHandler = function(ev) {
+    		var wheelHandler = function(ev) {
     			var factor = 1.1; // Scale increment per click
     			if (ev.shiftKey) factor = 1.01;
     			scale *= ((ev.detail || ev.wheelDelta) < 0) ? factor : 1.0/factor;
     			drawScene();
     			ev.preventDefault();
-  		  };
+    		};
     		canvas.addEventListener('DOMMouseScroll', wheelHandler, false);
     		canvas.addEventListener('mousewheel', wheelHandler, false);
         */
+
         initGL(canvas);
         initShaders();
         initBuffers();
