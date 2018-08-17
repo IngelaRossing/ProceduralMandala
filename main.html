@@ -180,7 +180,7 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
     vec2 newPos = mandalaCoords(vec2(vTextureCoord.s, vTextureCoord.t), nArms, radius);
 
     //create pattern 
-    float n =  snoise(vec3(newPos.x*noiseParam.x , newPos.y*noiseParam.y  , noiseParam[2]*radius) );
+    float n =  snoise(vec3(newPos.x*noiseParam.x , newPos.y*noiseParam.y  , noiseParam[2]*uTime) );
     //float p = float(newPos.x*newPos.x+ newPos.y*newPos.y  < 1.0 + 0.18 * n);
     float p = smoothstep(1.0 + 0.18 * n, 0.99 + 0.18 * n, newPos.x*newPos.x+ newPos.y*newPos.y); 
     vec4 pattern = vec4(vec3(p*p), 1.0);
@@ -194,10 +194,10 @@ vec4 drawLayer(vec4 background, float nArms, float radius, vec3 noiseParam, vec4
 void main(void) {
 
   // PARAMETERS THAT CAN BE SET TO ONES PREFERENCE
-  const float growthSpeed = 0.03;
+  const float growthSpeed = 0.0;
   const float nArms = 15.0; 
   const float layerDist = 0.2;
-  float layerAnimationSpeed = 2.0;
+  float layerAnimationSpeed = 0.1;
 
   // Hopefully all parameters can be set with regulators on the web page later
 
